@@ -51,7 +51,7 @@ class Window (Frame):
         self.init_window()
 
     def init_window(self):
-        self.master.title("Gmail Email Application 24 hr with close browser alone with retry failed")
+        self.master.title("Gmail Email Application 24 hr with close browser alone with retry failed and kill program")
 
         menu = Menu(self.master)
         self.master.config(menu=menu)
@@ -146,7 +146,10 @@ class Window (Frame):
                                         'Wait 24 hours to send again with email limit.\n'
                                         'Multi-Threading to not freeze the program.\n'
                                         'Retry functionality for failed emails.\n'
-                                        'Replace %NAME% to the recipient name.')
+                                        'Replace %NAME% to the recipient name.\n'
+                                        'Security page implemented.\n'
+                                        'Got It button bypass.\n'
+                                        'Kill program fixed.')
 
     def read_csv(self, filename=None):
         to_list = []
@@ -355,6 +358,8 @@ class Window (Frame):
             os.remove("exceed_email.csv")
         thread1 = threading.Thread(target=self.pop_up_window, args=())
         thread2 = threading.Thread(target=self.send_email, args=())
+        thread1.daemon = True
+        thread2.daemon = True
         thread1.start()
         thread2.start()
 

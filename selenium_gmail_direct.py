@@ -123,7 +123,7 @@ class Google:
             for list_chunks in self.send_list[:int(self.email_limit)]:
                 compose = self.wait.until(ec.visibility_of_element_located(
                     (By.CSS_SELECTOR, 'div[class="T-I J-J5-Ji T-I-KE L3"]')))
-                compose.click()
+                compose.send_keys(Keys.ENTER)
 
                 time.sleep(1)
                 email_to = self.wait.until(ec.visibility_of_element_located((By.XPATH, '//textarea[1]')))
