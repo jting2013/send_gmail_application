@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import filedialog, messagebox, ttk
 from functools import partial
 import smtplib
-from random import randint
+
 import time
 import os
 import csv
@@ -43,6 +43,13 @@ class Window (Frame):
         self.body = None
         self.email_limit = None
         self.send_btn = None
+        self.retry_label = None
+        self.passed_label = None
+        self.end_label = None
+        self.failed_address = None
+        self.send_passed_label = None
+        self.retry_send_passed_label = None
+        self.retry_failed_address = None
         self.failed_email = []
         self.report_win = None
         self.status_report = None
@@ -259,15 +266,15 @@ class Window (Frame):
         self.send_successful += int(results_output['to_list_amount'])
 
         for k, v in send_message.items():
-            passed_label = Label(self.master, text=f'{k} email addresses '
-                                                   f'amount: {self.send_successful}')
-            row_number = send_message.values()
-            passed_label.grid(row=int(v), column=0, columnspan=2, sticky=W)
+            if 'retry' in k.lower():
+                self.retry_send_passed_label = Label(self.master, text=f'{k} email addresses '
+                                                                       f'amount: {self.send_successful}')
+                self.retry_send_passed_label.grid(row=int(v), column=0, columnspan=2, sticky=W)
+            else:
+                self.send_passed_label = Label(self.master, text=f'{k} email addresses '
+                                                                 f'amount: {self.send_successful}')
+                self.send_passed_label.grid(row=int(v), column=0, columnspan=2, sticky=W)
 
-        # now_time = datetime.datetime.now()
-        # report_passed = Label(self.report_win, text=f'[{now_time}] Send email address amount: '
-        #                                             f'{results_output["to_list_amount"]}')
-        # report_passed.pack(expand=True)
         logging.info(results_output)
 
         if results_output['error'] == 'exception':
@@ -275,26 +282,48 @@ class Window (Frame):
             senders_email = results_output['failed_email']
             logging.info(f'failed number {int(len(list(dict.fromkeys(senders_email))))}')
             self.send_failed += int(len(list(dict.fromkeys(senders_email))))
-            failed_address = Label(self.master, text=f'{fail_message.keys()} email address amount: {self.send_failed}')
             logging.error(results_output['error'])
             logging.error(f'Failed address at {senders_email} amount: {self.send_failed}')
             for k, v in fail_message.items():
-                failed_address = Label(self.master,
-                                       text=f'{k} email address amount: {self.send_failed}')
-                failed_address.grid(row=v, column=0, columnspan=2, sticky=W)
+                if 'retry' in k.lower():
+                    self.retry_failed_address = Label(self.master,
+                                           text=f'{k} email address amount: {self.send_failed}')
+                    self.retry_failed_address.grid(row=v, column=0, columnspan=2, sticky=W)
+                else:
+                    self.failed_address = Label(self.master,
+                                           text=f'{k} email address amount: {self.send_failed}')
+                    self.failed_address.grid(row=v, column=0, columnspan=2, sticky=W)
             [self.failed_email.append(failed_e) for failed_e in results_output['failed_email']]
-            # failed_report = Label(self.report_win, text=f'[{now_time}] Failed email address amount: '
-            #                                             f'{len(list(dict.fromkeys(senders_email)))}')
-            # failed_report.pack(expand=True)
+
+    def clear_data(self):
+        try:
+            self.send_passed_label.destroy()
+        except:
+            pass
+        try:
+            self.failed_address.destroy()
+        except:
+            pass
+        try:
+            self.end_label.destroy()
+        except:
+            pass
+        try:
+            self.retry_label.destroy()
+        except:
+            pass
+        try:
+            self.retry_send_passed_label.destroy()
+        except:
+            pass
+        try:
+            self.retry_failed_address.destroy()
+        except:
+            pass
 
     @staticmethod
-    def next_time(time_start):
-        send_end_time = datetime.datetime.now()
-        calculate_time_delay = (send_end_time - time_start).total_seconds()
-        time.sleep(86400 - int(calculate_time_delay))
-        # time.sleep(300 - int(calculate_time_delay))
-
-        return datetime.datetime.now()
+    def next_time():
+        time.sleep(86400)
 
     def send_email(self):
         self.send_btn.config(state='disable', relief=SUNKEN)
@@ -304,6 +333,8 @@ class Window (Frame):
                 time_start = datetime.datetime.now()
                 passed_label = Label(self.master, text=f'START TIME: {time_start}')
                 passed_label.grid(row=12, column=0, columnspan=2, sticky=W)
+                self.clear_data()
+                self.failed_email = []
 
                 try:
                     headers = [
@@ -318,7 +349,7 @@ class Window (Frame):
                     self.google_send(to_list)
 
                     while os.path.exists("exceed_email.csv"):
-                        time_start = self.next_time(time_start)
+                        self.next_time()
                         exceed_email = self.read_csv("exceed_email.csv")
                         self.google_send(exceed_email)
                     logging.info(f'Failed email are listed below')
@@ -327,25 +358,26 @@ class Window (Frame):
                     self.send_successful = 0
                     send_message = {'RETRY Send': 15}
                     fail_message = {'RETRY Failed': 16}
+
                     if self.failed_email:
-                        time_start = self.next_time(time_start)
-                        retry_label = Label(self.master, text=f'Re-sending failed email address.')
-                        retry_label.grid(row=14, column=0, columnspan=2, sticky=W)
+                        self.next_time()
+                        self.retry_label = Label(self.master, text=f'Re-sending failed email address.')
+                        self.retry_label.grid(row=14, column=0, columnspan=2, sticky=W)
                         exceed_email = self.read_csv("failed_email.csv")
                         self.google_send(exceed_email, send_message, fail_message)
+
                     while os.path.exists("exceed_email.csv"):
-                        time_start = self.next_time(time_start)
+                        self.next_time()
                         exceed_email = self.read_csv("exceed_email.csv")
                         self.google_send(exceed_email, send_message, fail_message)
                 except Exception as e:
                     logging.error('[send_email] Exception error')
-                    # logging.error(f'{self.sent_from} and {self.username_get}')
                     logging.error(e)
         except Exception as e:
             logging.error(e)
         time_end = datetime.datetime.now()
-        passed_label = Label(self.master, text=f'END TIME: {time_end}')
-        passed_label.grid(row=13, column=0, columnspan=2, sticky=W)
+        self.end_label = Label(self.master, text=f'END TIME: {time_end}')
+        self.end_label.grid(row=13, column=0, columnspan=2, sticky=W)
         self.file = None
         self.win.destroy()
         self.send_successful = 0

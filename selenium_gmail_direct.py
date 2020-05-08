@@ -63,18 +63,18 @@ class Google:
             self.driver.get(self.gmail_link)
             self.driver.maximize_window()
 
-            self.wait = WebDriverWait(self.driver, 20)
+            self.wait = WebDriverWait(self.driver, 10)
 
             try:
                 login_box = self.wait.until(ec.visibility_of_element_located
                                         ((By.CSS_SELECTOR, 'span[class="RveJvd snByac"]')))
                 login_box.click()
-                time.sleep(5)
+                time.sleep(2)
                 pw_box = self.wait.until(ec.visibility_of_element_located
                                          ((By.XPATH, '//*[@id="password"]/div[1]/div/div[1]/input')))
                 pw_box.send_keys(self.password)
                 pw_box.send_keys(Keys.ENTER)
-                time.sleep(20)
+                time.sleep(2)
             except:
                 pass
             try:
