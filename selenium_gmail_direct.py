@@ -132,10 +132,13 @@ class Google:
                 subject_line = self.wait.until(ec.visibility_of_element_located((By.NAME, 'subjectbox')))
                 subject_line.send_keys(Keys.CONTROL, 'v')
                 time.sleep(1)
-                pyperclip.copy(self.message.replace('%NAME%', list_chunks[0]))
+                # pyperclip.copy(self.message.replace('%NAME%', list_chunks[0]))
+                j_body = self.message.replace("%NAME%", list_chunks[0])
+
                 body = self.wait.until(
                     ec.visibility_of_element_located((By.CSS_SELECTOR, 'div[class="Am Al editable LW-avf tS-tW"]')))
-                body.send_keys(Keys.CONTROL, 'v')
+                self.driver.execute_script("""document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace('\n', '').replace('\r', ''), body)
+                # body.send_keys(Keys.CONTROL, 'v')
                 time.sleep(1)
                 # send = self.wait.until(
                 #     ec.visibility_of_element_located(

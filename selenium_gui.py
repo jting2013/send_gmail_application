@@ -58,7 +58,8 @@ class Window (Frame):
         self.init_window()
 
     def init_window(self):
-        self.master.title("Gmail Email Application 24 hr with close browser alone with retry failed and kill program")
+        self.master.title("Gmail Email Application 24 hr with close browser alone with retry failed "
+                          "and kill program and HTML format")
 
         menu = Menu(self.master)
         self.master.config(menu=menu)
@@ -156,7 +157,8 @@ class Window (Frame):
                                         'Replace %NAME% to the recipient name.\n'
                                         'Security page implemented.\n'
                                         'Got It button bypass.\n'
-                                        'Kill program fixed.')
+                                        'Kill program fixed.\n'
+                                        'Send HTML format.')
 
     def read_csv(self, filename=None):
         to_list = []
