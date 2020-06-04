@@ -149,7 +149,7 @@ class Window (Frame):
 
     @staticmethod
     def about_us():
-        messagebox.showinfo('About Us', 'Welcome to GMAIL Automatic Send message\n\nSending email one at a time.\n'
+        messagebox.showinfo('About Us', 'Version 6.01.2020\nWelcome to GMAIL Automatic Send message\n\nSending email one at a time.\n'
                                         'Clearing the cache at 50th email.\nAdding timer of start and end time.\n'
                                         'Wait 24 hours to send again with email limit.\n'
                                         'Multi-Threading to not freeze the program.\n'
