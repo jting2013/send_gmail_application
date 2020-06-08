@@ -5,7 +5,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 
 import time
-from random import randint
+import yaml
+import logging
 import sys, os
 import getpass
 import subprocess
@@ -14,14 +15,14 @@ import csv
 import pyperclip
 
 class Google:
-    def __init__(self, username, password,  to_address, subject, message, logging, email_limit):
-        self.username = username
-        self.password = password
-        self.to_address = to_address
-        self.subject = subject
-        self.message = message
+    def __init__(self, results):
+        self.csv_location = results['directory_csv']
+        self.email_limit = results['email_limit']
+        self.subject = results['subject']
+        self.message = results['body']
         self.logging = logging
-        self.email_limit = email_limit
+
+        self.to_address = None
         self.driver = None
         self.wait = None
         self.send_list = None
@@ -88,6 +89,19 @@ class Google:
             self.driver.save_screenshot("screenfailure_login.png")
             time.sleep(5)
 
+    def read_csv(self, filename=None):
+        to_list = []
+
+        try:
+            with open(filename) as csvfile:
+                readCSV = csv.reader(csvfile, delimiter=',')
+                for row in readCSV:
+                    if 'name' not in str(row).lower() and 'address' not in str(row).lower():
+                        to_list.append((row[0], row[1]))
+            return to_list
+        except Exception as e:
+            self.logging.error('ERROR!!', f'Please make sure CSV file is correct.')
+
     def write_csv(self, email_list, file_name='exceed_email.csv', write_mode='w'):
         data = dict()
         with open(file_name, mode=write_mode, encoding='utf-8', newline='') as csv_file:
@@ -146,7 +160,7 @@ class Google:
                 else:
                     self.driver.execute_script(
                         """document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace(
-                            '\n', '<br>').replace("'", '&#39;'), body)
+                            '\n', '<br><br>').replace("'", '&#39;'), body)
                 # body.send_keys(Keys.CONTROL, 'v')
                 time.sleep(1)
                 # send = self.wait.until(
@@ -192,6 +206,7 @@ class Google:
         self.logging.info('*' * 80)
 
     def run_email(self):
+        self.to_address = self.read_csv(self.csv_location)
         self.split_csv_email()
         self.send_list = self.to_address[:int(self.email_limit)]
         while self.send_list:
@@ -203,3 +218,18 @@ class Google:
                 pass
 
         return self.output_dict
+
+
+def read_yaml(file_location):
+    with open(file_location) as file:
+        # The FullLoader parameter handles the conversion from YAML
+        # scalar values to Python the dictionary format
+        data = yaml.load(file)
+
+        return data
+
+
+results = read_yaml(r'C:\Users\jumpi\Documents\GIT\send_gmail_application\test_files\123.yaml')
+print(results)
+gmail_send = Google(results)
+gmail_send.run_email()
