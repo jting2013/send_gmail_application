@@ -138,7 +138,7 @@ class Google:
                 body = self.wait.until(
                     ec.visibility_of_element_located((By.CSS_SELECTOR, 'div[class="Am Al editable LW-avf tS-tW"]')))
                 if '<html>' in j_body:
-                    self.driver.execute_script("""document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace('\n', '').replace("'", '"'), body)
+                    self.driver.execute_script("""document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace('\n', '').replace("'", '&#39;'), body)
                 # elif '</p>' in j_body:
                 #     self.driver.execute_script(
                 #         """document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" %
@@ -146,7 +146,7 @@ class Google:
                 else:
                     self.driver.execute_script(
                         """document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace(
-                            '\n', '<br>'), body)
+                            '\n', '<br>').replace("'", '&#39;'), body)
                 # body.send_keys(Keys.CONTROL, 'v')
                 time.sleep(1)
                 # send = self.wait.until(

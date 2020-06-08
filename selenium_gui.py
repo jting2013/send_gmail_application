@@ -98,6 +98,9 @@ class Window (Frame):
         btn2 = Button(root, text="Directory_CSV", command=self.clicked_dir)
         btn2.grid(row=5, column=1, sticky=W)
 
+        html_btn = Button(root, text="HTML TAGS", command=self.html_tag_help)
+        html_btn.grid(row=5, column=2, sticky=W)
+
         email_limit = Label(self.master, text="Email Limit")
         email_limit.grid(row=6, column=0, sticky=E)
 
@@ -159,6 +162,14 @@ class Window (Frame):
                                         'Got It button bypass.\n'
                                         'Kill program fixed.\n'
                                         'Send HTML format.')
+
+    @staticmethod
+    def html_tag_help():
+        messagebox.showinfo('About Us', '<b>hello</b>\n'
+                                        '<i>hello</i>\n'
+                                        '<u>hello</u>\n'
+                                        '<font color="red">hello</font>\n'
+                                        '<a href="www.google.com">Google</a>\n')
 
     def read_csv(self, filename=None):
         to_list = []
