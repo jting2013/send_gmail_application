@@ -228,8 +228,12 @@ def read_yaml(file_location):
 
         return data
 
+try:
+    yaml_file = os.environ.get('yam_file')
+except:
+    yaml_file = r'C:\Users\jumpi\Documents\GIT\send_gmail_application\test_files\123.yaml'
 
-results = read_yaml(r'C:\Users\jumpi\Documents\GIT\send_gmail_application\test_files\123.yaml')
+results = read_yaml(yaml_file)
 print(results)
 gmail_send = Google(results)
 gmail_send.run_email()
