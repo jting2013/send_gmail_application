@@ -229,7 +229,7 @@ def read_yaml(file_location):
         return data
 
 try:
-    yaml_file = os.environ.get('yam_file')
+    yaml_file = os.environ.get('yam_file', encoding='utf-8')
 except:
     yaml_file = r'C:\Users\jumpi\Documents\GIT\send_gmail_application\test_files\123.yaml'
 
