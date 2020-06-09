@@ -221,7 +221,7 @@ class Google:
 
 
 def read_yaml(file_location):
-    with open(file_location) as file:
+    with open(file_location, encoding='utf-8') as file:
         # The FullLoader parameter handles the conversion from YAML
         # scalar values to Python the dictionary format
         data = yaml.load(file)
@@ -229,7 +229,7 @@ def read_yaml(file_location):
         return data
 
 try:
-    yaml_file = os.environ.get('yam_file', encoding='utf-8')
+    yaml_file = os.environ.get('yaml_file')
 except:
     yaml_file = r'C:\Users\jumpi\Documents\GIT\send_gmail_application\test_files\123.yaml'
 
