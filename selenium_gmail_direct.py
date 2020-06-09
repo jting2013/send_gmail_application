@@ -233,6 +233,10 @@ try:
 except:
     yaml_file = r'C:\Users\jumpi\Documents\GIT\send_gmail_application\test_files\123.yaml'
 
+if os.path.exists("failed_email.csv"):
+    os.remove("failed_email.csv")
+if os.path.exists("exceed_email.csv"):
+    os.remove("exceed_email.csv")
 results = read_yaml(yaml_file)
 print(results)
 gmail_send = Google(results)
