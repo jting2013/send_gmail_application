@@ -5,8 +5,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 
 import time
-import yaml
-import logging
+from random import randint
 import sys, os
 import getpass
 import subprocess
@@ -15,14 +14,14 @@ import csv
 import pyperclip
 
 class Google:
-    def __init__(self, results):
-        self.csv_location = results['directory_csv']
-        self.email_limit = results['email_limit']
-        self.subject = results['subject']
-        self.message = results['body']
+    def __init__(self, username, password,  to_address, subject, message, logging, email_limit):
+        self.username = username
+        self.password = password
+        self.to_address = to_address
+        self.subject = subject
+        self.message = message
         self.logging = logging
-
-        self.to_address = None
+        self.email_limit = email_limit
         self.driver = None
         self.wait = None
         self.send_list = None
@@ -89,19 +88,6 @@ class Google:
             self.driver.save_screenshot("screenfailure_login.png")
             time.sleep(5)
 
-    def read_csv(self, filename=None):
-        to_list = []
-
-        try:
-            with open(filename) as csvfile:
-                readCSV = csv.reader(csvfile, delimiter=',')
-                for row in readCSV:
-                    if 'name' not in str(row).lower() and 'address' not in str(row).lower():
-                        to_list.append((row[0], row[1]))
-            return to_list
-        except Exception as e:
-            self.logging.error('ERROR!!', f'Please make sure CSV file is correct.')
-
     def write_csv(self, email_list, file_name='exceed_email.csv', write_mode='w'):
         data = dict()
         with open(file_name, mode=write_mode, encoding='utf-8', newline='') as csv_file:
@@ -152,7 +138,7 @@ class Google:
                 body = self.wait.until(
                     ec.visibility_of_element_located((By.CSS_SELECTOR, 'div[class="Am Al editable LW-avf tS-tW"]')))
                 if '<html>' in j_body:
-                    self.driver.execute_script("""document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace('\n', '').replace("'", '&#39;'), body)
+                    self.driver.execute_script("""document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace('\n', '').replace("'", '"'), body)
                 # elif '</p>' in j_body:
                 #     self.driver.execute_script(
                 #         """document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" %
@@ -206,7 +192,6 @@ class Google:
         self.logging.info('*' * 80)
 
     def run_email(self):
-        self.to_address = self.read_csv(self.csv_location)
         self.split_csv_email()
         self.send_list = self.to_address[:int(self.email_limit)]
         while self.send_list:
@@ -218,26 +203,3 @@ class Google:
                 pass
 
         return self.output_dict
-
-
-def read_yaml(file_location):
-    with open(file_location, encoding='utf-8') as file:
-        # The FullLoader parameter handles the conversion from YAML
-        # scalar values to Python the dictionary format
-        data = yaml.load(file, Loader=yaml.FullLoader)
-
-        return data
-
-try:
-    yaml_file = os.environ.get('yaml_file')
-except:
-    yaml_file = r'C:\Users\jumpi\Documents\GIT\send_gmail_application\test_files\123.yaml'
-
-if os.path.exists("failed_email.csv"):
-    os.remove("failed_email.csv")
-if os.path.exists("exceed_email.csv"):
-    os.remove("exceed_email.csv")
-results = read_yaml(yaml_file)
-print(results)
-gmail_send = Google(results)
-gmail_send.run_email()
