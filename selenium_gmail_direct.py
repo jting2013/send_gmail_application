@@ -14,7 +14,8 @@ import csv
 import pyperclip
 
 class Google:
-    def __init__(self, username, password,  to_address, subject, message, logging, email_limit):
+    def __init__(self, username, password,  to_address, subject, message, logging, email_limit,
+                 follow_up=False, follow_up_datetime: str = None):
         self.username = username
         self.password = password
         self.to_address = to_address
@@ -22,6 +23,8 @@ class Google:
         self.message = message
         self.logging = logging
         self.email_limit = email_limit
+        self.follow_up = follow_up
+        self.follow_up_datetime = follow_up_datetime
         self.driver = None
         self.wait = None
         self.send_list = None
@@ -118,50 +121,139 @@ class Google:
         self.write_csv([list_chunks], 'failed_email.csv', 'a')
         self.driver.close()
 
+    def search_follow_up_email(self, email_address: str = None):
+        search_box = self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'input[class="gb_rf"]')))
+        search_box.clear()
+        search_box.send_keys(email_address)
+        search_box.send_keys(Keys.ENTER)
+
+        table_lookup = \
+            self.wait.until(ec.visibility_of_element_located(
+                (By.XPATH, '/html/body/div[43]/div[3]/div/div[2]/div[1]/div[2]/div/div/div/div/div[2]/div/div[1]/div/div[2]/div[5]/div[2]/div/table')))
+        table_lookup.find_elements_by_tag_name('tr')[0].click()
+
+        try:
+            reply_btn = self.wait.until(
+                ec.visibility_of_element_located(
+                    (By.XPATH,
+                     '/html/body/div[43]/div[3]/div/div[2]/div[1]/div[2]/div/div/div/div/div[2]/div/div[1]/div/div[3]/div/table/tr/td[1]/div[2]/div[2]/div/div[3]/div[2]/div/div/div/div/div[2]/div/div/div/div[4]/table/tbody/tr/td[2]/table/tbody/tr[2]/td/div[2]/div[1]/div[4]/table/tbody/tr/td[1]/div/div[2]/div[2]')))
+            reply_btn.click()
+        except:
+            pass
+        try:
+            reply_table = self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'table[class="cf wS"')))
+            reply_table.find_elements_by_tag_name('span')[0].click()
+        except:
+            pass
+
+        try:
+            return self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'span[class="mz"]')))
+        except:
+            pass
+        try:
+            send_scheduler = self.wait.until(
+                                ec.visibility_of_element_located(
+                                    (By.CSS_SELECTOR, 'div[class="T-I J-J5-Ji hG T-I-atl L3"]')))
+
+            send_scheduler.click()
+        except:
+            pass
+
+    def follow_up_email(self):
+        # try:
+        #     send_scheduler = self.wait.until(
+        #                         ec.visibility_of_element_located(
+        #                             (By.CSS_SELECTOR, 'div[class="T-I J-J5-Ji hG T-I-atl L3"]')))
+        #     send_scheduler.click()
+        # except:
+        #     pass
+
+        scheduler_btn = self.wait.until(
+            ec.visibility_of_element_located(
+                (By.CSS_SELECTOR, 'div[class="J-N yr"]')))
+        scheduler_btn.click()
+
+        time.sleep(1)
+        try:
+            scheduler_time_date = self.wait.until(
+            ec.visibility_of_element_located(
+                (By.XPATH, '/html/body/div[75]/div[2]/div[2]/div[4]/div[2]')))
+
+            scheduler_time_date.click()
+        except:
+            scheduler_time_date = self.wait.until(
+            ec.visibility_of_element_located(
+                (By.XPATH, '/html/body/div[75]/div[2]/div[2]/div[4]/div[2]')))
+
+            scheduler_time_date.click()
+
+        date_textbox = self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'input[class="hu jA"]')))
+        date_textbox.clear()
+        date_textbox.send_keys(self.follow_up_datetime.split(' ')[0])
+
+        time_textbox = self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'input[class="hu ks"]')))
+        time_textbox.clear()
+        time_textbox.send_keys(self.follow_up_datetime.split(' ')[1])
+        time_textbox.send_keys(Keys.ENTER)
+
+        time.sleep(5)
+
     def send_email(self):
         try:
+            sched_result = False
             for list_chunks in self.send_list[:int(self.email_limit)]:
-                compose = self.wait.until(ec.visibility_of_element_located(
-                    (By.CSS_SELECTOR, 'div[class="T-I J-J5-Ji T-I-KE L3"]')))
-                compose.send_keys(Keys.ENTER)
-
-                time.sleep(1)
-                email_to = self.wait.until(ec.visibility_of_element_located((By.XPATH, '//textarea[1]')))
-                email_to.send_keys(f'{list_chunks[1]}')
-                pyperclip.copy(self.subject.replace('%NAME%', list_chunks[0]))
-                subject_line = self.wait.until(ec.visibility_of_element_located((By.NAME, 'subjectbox')))
-                subject_line.send_keys(Keys.CONTROL, 'v')
-                time.sleep(1)
-                # pyperclip.copy(self.message.replace('%NAME%', list_chunks[0]))
-                j_body = self.message.replace("%NAME%", list_chunks[0])
-
-                body = self.wait.until(
-                    ec.visibility_of_element_located((By.CSS_SELECTOR, 'div[class="Am Al editable LW-avf tS-tW"]')))
-                if '<html>' in j_body:
-                    self.driver.execute_script("""document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace('\n', '').replace("'", '"'), body)
-                # elif '</p>' in j_body:
-                #     self.driver.execute_script(
-                #         """document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" %
-                #         j_body.replace('\n', '').replace('<br>', '').replace("'", '"'), body)
+                if self.follow_up:
+                    sched_result = self.search_follow_up_email(list_chunks[1])
                 else:
-                    self.driver.execute_script(
-                        """document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace(
-                            '\n', '<br><br>').replace("'", '&#39;'), body)
-                # body.send_keys(Keys.CONTROL, 'v')
-                time.sleep(1)
-                # send = self.wait.until(
-                #     ec.visibility_of_element_located(
-                #         (By.ID, 'div[class="T-I J-J5-Ji aoO v7 T-I-atl L3"]')))
-                body.send_keys(Keys.CONTROL, Keys.ENTER)
-                # send.click()
-                time.sleep(2)
-                try:
-                    self.driver.find_element_by_xpath('//*[@class="Ha"]')
-                    self.error_output(list_chunks)
-                    return
-                except Exception as e:
-                    self.logging.debug(f'Checking for window status {e}')
-                    pass
+                    compose = self.wait.until(ec.visibility_of_element_located(
+                        (By.CSS_SELECTOR, 'div[class="T-I J-J5-Ji T-I-KE L3"]')))
+                    compose.send_keys(Keys.ENTER)
+
+                    time.sleep(1)
+                    email_to = self.wait.until(ec.visibility_of_element_located((By.XPATH, '//textarea[1]')))
+                    email_to.send_keys(f'{list_chunks[1]}')
+                    pyperclip.copy(self.subject.replace('%NAME%', list_chunks[0]))
+                    subject_line = self.wait.until(ec.visibility_of_element_located((By.NAME, 'subjectbox')))
+                    subject_line.send_keys(Keys.CONTROL, 'v')
+                    time.sleep(1)
+
+                if not sched_result:
+                    # pyperclip.copy(self.message.replace('%NAME%', list_chunks[0]))
+                    j_body = self.message.replace("%NAME%", list_chunks[0])
+
+                    if self.follow_up:
+                        body = self.wait.until(ec.visibility_of_element_located(
+                            (By.CSS_SELECTOR, 'div[class="Am aO9 Al editable LW-avf tS-tW"]')))
+                    else:
+                        body = self.wait.until(
+                            ec.visibility_of_element_located((By.CSS_SELECTOR, 'div[class="Am Al editable LW-avf tS-tW"]')))
+
+                    if '<html>' in j_body:
+                        self.driver.execute_script(
+                            """document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" %
+                            j_body.replace('\n', '').replace("'", '"'), body)
+                    elif '</' in j_body:
+                        self.driver.execute_script(
+                            """document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" %
+                            j_body.replace('\n', '<br><br>').replace("'", '&#39;'), body)
+                    else:
+                        self.driver.execute_script(
+                            """document.getElementsByClassName("Am Al editable LW-avf tS-tW")[0].innerHTML = '%s'""" % j_body.replace(
+                                '\n', '<br>').replace("'", '&#39;'), body)
+
+                    if self.follow_up:
+                        self.follow_up_email()
+                    else:
+                        time.sleep(1)
+                        body.send_keys(Keys.CONTROL, Keys.ENTER)
+                        time.sleep(2)
+                    try:
+                        self.driver.find_element_by_xpath('//*[@class="Ha"]')
+                        self.error_output(list_chunks)
+                        return
+                    except Exception as e:
+                        self.logging.debug(f'Checking for window status {e}')
+                        pass
 
                 self.total_email += 1
                 if self.total_email % 50 == 0:
@@ -196,6 +288,7 @@ class Google:
         self.send_list = self.to_address[:int(self.email_limit)]
         while self.send_list:
             try:
+                time.sleep(2)
                 self.deploy_chrome()
                 self.send_email()
             except:

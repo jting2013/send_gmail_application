@@ -8,7 +8,7 @@ import os
 import csv
 import logging
 from selenium_gmail_direct import Google
-import datetime
+from datetime import datetime, timedelta
 import threading
 import yaml
 import sched
@@ -21,6 +21,7 @@ logging.basicConfig(handlers=[file_handler, console],
                     format='%(asctime)-15s: %(name)s: %(levelname)s: %(message)s',
                     level=logging.DEBUG,
                     )
+
 
 class Window (Frame):
     def __init__(self, master=None):
@@ -57,6 +58,7 @@ class Window (Frame):
         self.failed_email = []
         self.report_win = None
         self.status_report = None
+        self.follow_up_datetime = None
         self.send_successful = 0
         self.send_failed = 0
         self.init_window()
@@ -74,7 +76,7 @@ class Window (Frame):
         menu.add_cascade(label='File', menu=file)
 
         edit = Menu(menu, tearoff=0)
-        edit.add_command(label='Date_Time', command=self.showTxt)
+        edit.add_command(label='Date_Time', command=self.show_text)
         menu.add_cascade(label='Time', menu=edit)
 
         help = Menu(menu, tearoff=0)
@@ -158,13 +160,13 @@ class Window (Frame):
         self.message.destroy()
         self.file.destroy()
 
-    def showTxt(self):
+    def show_text(self):
         self.text = Label(self, text=f'Good morning sir!')
         self.text.grid(row=1, column=3)
 
     @staticmethod
     def about_us():
-        messagebox.showinfo('About Us', 'Version 6.01.2020\nWelcome to GMAIL Automatic Send message\n\nSending email one at a time.\n'
+        messagebox.showinfo('About Us', 'Version 6.12.2020\nWelcome to GMAIL Automatic Send message\n\nSending email one at a time.\n'
                                         'Clearing the cache at 50th email.\nAdding timer of start and end time.\n'
                                         'Wait 24 hours to send again with email limit.\n'
                                         'Multi-Threading to not freeze the program.\n'
@@ -173,7 +175,8 @@ class Window (Frame):
                                         'Security page implemented.\n'
                                         'Got It button bypass.\n'
                                         'Kill program fixed.\n'
-                                        'Send HTML format.')
+                                        'Send HTML format.\n'
+                                        'Gmail scheduler for follow up newsletter reiteration.')
 
     @staticmethod
     def html_tag_help():
@@ -188,7 +191,7 @@ class Window (Frame):
         if not filename:
             filename = self.file
         try:
-            with open(filename) as csvfile:
+            with open(filename, encoding='utf-8') as csvfile:
                 readCSV = csv.reader(csvfile, delimiter=',')
                 for row in readCSV:
                     if 'name' not in str(row).lower() and 'address' not in str(row).lower():
@@ -275,7 +278,7 @@ class Window (Frame):
             logging.info(self.body)
             return to_list, subject_failed, body_failed
 
-    def google_send(self, to_list, send_message=None, fail_message=None):
+    def google_send(self, to_list, send_message=None, fail_message=None, follow_up=False, follow_up_datetime=None):
         if not send_message:
             send_message = {'Send': 10}
         if not fail_message:
@@ -286,7 +289,7 @@ class Window (Frame):
         elif not self.email_limit:
             self.limit_count = 500
         g_send = Google(self.sent_from, self.sent_password, to_list, self.subject, self.body,
-                                           logging, self.limit_count)
+                                           logging, self.limit_count, follow_up, follow_up_datetime)
         results_output = g_send.run_email()
         self.send_successful += int(results_output['to_list_amount'])
 
@@ -358,35 +361,37 @@ class Window (Frame):
 
             return data
 
-    def run_future_send(self):
-        if os.environ.get('yaml_file'):
-            yaml_file = os.environ.get('yaml_file')
-        else:
-            yaml_file = r'C:\Users\jumpi\Documents\GIT\send_gmail_application\test_files\123.yaml'
-
+    def run_future_send(self, email_list=None, delay_date=None):
         if os.path.exists("failed_email.csv"):
             os.remove("failed_email.csv")
         if os.path.exists("exceed_email.csv"):
             os.remove("exceed_email.csv")
-        results = self.read_yaml(yaml_file)
+        results = self.read_yaml(self.yaml_file)
         logging.info(results)
-        self.subject = results['subject']
-        self.body = results['body']
-        self.limit_count = results['email_limit']
-        to_list = self.read_csv(results['directory_csv'])
+        follow_subject = results['subject']
+        follow_body = results['body']
+        if not delay_date:
+            delay_date = results['delay_date']
+            self.follow_up_datetime = results['delay_date']
+            logging.info(self.follow_up_datetime)
+        if not email_list:
+            email_list = self.read_csv()
 
-        t = time_module.strptime(results['delay_date'], '%m/%d/%Y %H:%M:%S')
-        t = time_module.mktime(t)
-        s = sched.scheduler(time_module.time, time_module.sleep)
-        s.enterabs(t, 1, self.google_send, (to_list,))
-        s.run()
+        g_send = Google(self.sent_from, self.sent_password, email_list, follow_subject, follow_body,
+                        logging, self.limit_count, True, delay_date)
+        return g_send.run_email()
+        # t = time_module.strptime(results['delay_date'], '%m/%d/%Y %H:%M:%S')
+        # t = time_module.mktime(t)
+        # s = sched.scheduler(time_module.time, time_module.sleep)
+        # s.enterabs(t, 1, self.google_send, (to_list,))
+        # s.run()
 
     def send_email(self):
         self.send_btn.config(state='disable', relief=SUNKEN)
         try:
             to_list, subject_failed, body_failed = self.verify_component()
             if not subject_failed and not body_failed:
-                time_start = datetime.datetime.now()
+                time_start = datetime.now()
                 passed_label = Label(self.master, text=f'START TIME: {time_start}')
                 passed_label.grid(row=12, column=0, columnspan=2, sticky=W)
                 self.clear_data()
@@ -404,10 +409,19 @@ class Window (Frame):
                     logging.info(f'sent_from {self.sent_from} \nto_list: {to_list}\nmessage: {message}')
                     self.google_send(to_list)
 
+                    if self.yaml_file:
+                        self.run_future_send()
+
+                    add_date = datetime.strptime(self.follow_up_datetime, '%m/%d/%Y %H:%M')
                     while os.path.exists("exceed_email.csv"):
-                        self.next_time()
+                        # self.next_time()
                         exceed_email = self.read_csv("exceed_email.csv")
                         self.google_send(exceed_email)
+                        if self.yaml_file:
+                            modified_date = add_date + timedelta(days=1)
+                            future_time = datetime.strftime(modified_date, '%m/%d/%Y %H:%M')
+                            self.run_future_send(exceed_email, future_time)
+                            add_date = future_time
                     logging.info(f'Failed email are listed below')
                     logging.info(list(dict.fromkeys(self.failed_email)))
                     self.send_failed = 0
@@ -427,37 +441,16 @@ class Window (Frame):
                         exceed_email = self.read_csv("exceed_email.csv")
                         self.google_send(exceed_email, send_message, fail_message)
 
-                    if self.yaml_file:
-                        self.run_future_send()
-
                         while os.path.exists("exceed_email.csv"):
                             self.next_time()
                             exceed_email = self.read_csv("exceed_email.csv")
-                            self.google_send(exceed_email)
-                        logging.info(f'Failed email are listed below')
-                        logging.info(list(dict.fromkeys(self.failed_email)))
-                        self.send_failed = 0
-                        self.send_successful = 0
-                        send_message = {'RETRY Send': 15}
-                        fail_message = {'RETRY Failed': 16}
-
-                        if self.failed_email:
-                            self.next_time()
-                            self.retry_label = Label(self.master, text=f'Re-sending failed email address.')
-                            self.retry_label.grid(row=14, column=0, columnspan=2, sticky=W)
-                            exceed_email = self.read_csv("failed_email.csv")
-                            self.google_send(exceed_email, send_message, fail_message)
-
-                        while os.path.exists("exceed_email.csv"):
-                            self.next_time()
-                            exceed_email = self.read_csv("exceed_email.csv")
-                            self.google_send(exceed_email, send_message, fail_message)
+                            self.google_send(exceed_email, send_message, fail_message, True, self.follow_up_datetime)
                 except Exception as e:
                     logging.error('[send_email] Exception error')
                     logging.error(e)
         except Exception as e:
             logging.error(e)
-        time_end = datetime.datetime.now()
+        time_end = datetime.now()
         self.end_label = Label(self.master, text=f'END TIME: {time_end}')
         self.end_label.grid(row=13, column=0, columnspan=2, sticky=W)
         self.file = None
