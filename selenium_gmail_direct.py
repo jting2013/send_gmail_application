@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
+from bs4 import BeautifulSoup
 
 import time
 from random import randint
@@ -12,6 +13,16 @@ import subprocess
 from clear_cache import ClearCache
 import csv
 import pyperclip
+import logging
+
+# module_logger = logging.getLogger(__name__)
+# console = logging.StreamHandler()
+# file_handler = logging.FileHandler("selenium.txt", "w")
+# logging.basicConfig(handlers=[file_handler, console],
+#                     format='%(asctime)-15s: %(name)s: %(levelname)s: %(message)s',
+#                     level=logging.INFO,
+#                     )
+
 
 class Google:
     def __init__(self, username, password,  to_address, subject, message, logging, email_limit,
@@ -65,6 +76,12 @@ class Google:
 
             self.driver.get(self.gmail_link)
             self.driver.maximize_window()
+            html = self.driver.page_source
+            soup = BeautifulSoup(html, 'html.parser')
+            self.logging.info(str(soup.prettify()))
+            self.logging.info(str(html))
+            with open("out.txt", "w") as out:
+                out.write(str(soup.prettify("utf-8")))
 
             self.wait = WebDriverWait(self.driver, 10)
 
@@ -122,51 +139,57 @@ class Google:
         self.driver.close()
 
     def search_follow_up_email(self, email_address: str = None):
-        search_box = self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'input[class="gb_rf"]')))
+        search_box = self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'input[name="q"]')))
         search_box.clear()
         search_box.send_keys(email_address)
         search_box.send_keys(Keys.ENTER)
 
-        table_lookup = \
-            self.wait.until(ec.visibility_of_element_located(
-                (By.XPATH, '/html/body/div[43]/div[3]/div/div[2]/div[1]/div[2]/div/div/div/div/div[2]/div/div[1]/div/div[2]/div[5]/div[2]/div/table')))
-        table_lookup.find_elements_by_tag_name('tr')[0].click()
+        table_lookup = self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'div[class="BltHke nH oy8Mbf"]')))
+        for table_name in table_lookup.find_elements_by_tag_name('table'):
+            try:
+                self.logging.debug(f'Table class name for delay is: {table_name.get_attribute("class")}')
+                if table_name.get_attribute('class') == 'F cf zt' and len(table_name.find_elements_by_tag_name('tr')) > 0:
+                    table_name.find_elements_by_tag_name('tr')[0].click()
+                    try:
+                        reply_btn = self.wait.until(
+                            ec.visibility_of_element_located(
+                                (By.XPATH,
+                                 '/html/body/div[43]/div[3]/div/div[2]/div[1]/div[2]/div/div/div/div/div[2]/div/div[1]/div/div[3]/div/table/tr/td[1]/div[2]/div[2]/div/div[3]/div[2]/div/div/div/div/div[2]/div/div/div/div[4]/table/tbody/tr/td[2]/table/tbody/tr[2]/td/div[2]/div[1]/div[4]/table/tbody/tr/td[1]/div/div[2]/div[2]')))
+                        reply_btn.click()
+                    except:
+                        pass
+                    try:
+                        reply_table = self.wait.until(
+                            ec.visibility_of_element_located((By.CSS_SELECTOR, 'table[class="cf wS"')))
+                        reply_table.find_elements_by_tag_name('span')[0].click()
+                    except:
+                        pass
 
-        try:
-            reply_btn = self.wait.until(
-                ec.visibility_of_element_located(
-                    (By.XPATH,
-                     '/html/body/div[43]/div[3]/div/div[2]/div[1]/div[2]/div/div/div/div/div[2]/div/div[1]/div/div[3]/div/table/tr/td[1]/div[2]/div[2]/div/div[3]/div[2]/div/div/div/div/div[2]/div/div/div/div[4]/table/tbody/tr/td[2]/table/tbody/tr[2]/td/div[2]/div[1]/div[4]/table/tbody/tr/td[1]/div/div[2]/div[2]')))
-            reply_btn.click()
-        except:
-            pass
-        try:
-            reply_table = self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'table[class="cf wS"')))
-            reply_table.find_elements_by_tag_name('span')[0].click()
-        except:
-            pass
+                    try:
+                        return self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'span[class="mz"]')))
+                    except:
+                        pass
+                    try:
+                        send_scheduler = self.wait.until(
+                            ec.visibility_of_element_located(
+                                (By.CSS_SELECTOR, 'div[class="T-I J-J5-Ji hG T-I-atl L3"]')))
 
-        try:
-            return self.wait.until(ec.visibility_of_element_located((By.CSS_SELECTOR, 'span[class="mz"]')))
-        except:
-            pass
+                        send_scheduler.click()
+                    except:
+                        pass
+            except:
+                pass
+
+
+
+    def follow_up_email(self):
         try:
             send_scheduler = self.wait.until(
                                 ec.visibility_of_element_located(
                                     (By.CSS_SELECTOR, 'div[class="T-I J-J5-Ji hG T-I-atl L3"]')))
-
             send_scheduler.click()
         except:
             pass
-
-    def follow_up_email(self):
-        # try:
-        #     send_scheduler = self.wait.until(
-        #                         ec.visibility_of_element_located(
-        #                             (By.CSS_SELECTOR, 'div[class="T-I J-J5-Ji hG T-I-atl L3"]')))
-        #     send_scheduler.click()
-        # except:
-        #     pass
 
         scheduler_btn = self.wait.until(
             ec.visibility_of_element_located(
@@ -175,15 +198,15 @@ class Google:
 
         time.sleep(1)
         try:
-            scheduler_time_date = self.wait.until(
-            ec.visibility_of_element_located(
-                (By.XPATH, '/html/body/div[75]/div[2]/div[2]/div[4]/div[2]')))
-
-            scheduler_time_date.click()
+            scheduler_time_date_button = self.wait.until(
+                ec.visibility_of_element_located(
+                    (By.CSS_SELECTOR, 'div[class="Az AM"]')))
+            scheduler_time_date_button.click()
         except:
             scheduler_time_date = self.wait.until(
             ec.visibility_of_element_located(
-                (By.XPATH, '/html/body/div[75]/div[2]/div[2]/div[4]/div[2]')))
+                (By.XPATH, '/html/body/div[79]/div[2]/div[2]/div[4]/div[2]')))
+
 
             scheduler_time_date.click()
 
@@ -206,7 +229,7 @@ class Google:
                     sched_result = self.search_follow_up_email(list_chunks[1])
                 else:
                     compose = self.wait.until(ec.visibility_of_element_located(
-                        (By.CSS_SELECTOR, 'div[class="T-I J-J5-Ji T-I-KE L3"]')))
+                        (By.CSS_SELECTOR, 'div[class="T-I T-I-KE L3"]')))
                     compose.send_keys(Keys.ENTER)
 
                     time.sleep(1)
