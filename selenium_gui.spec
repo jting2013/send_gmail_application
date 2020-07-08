@@ -4,8 +4,8 @@ block_cipher = None
 
 
 a = Analysis(['selenium_gui.py'],
-             pathex=['C:\\Users\\jjen\\PycharmProjects\\excel_data\\GUI\\Web'],
-             binaries=[('C:\\Users\\jjen\\PycharmProjects\\excel_data\\GUI\\Web\\chromedriver.exe', '.')],
+             pathex=['C:\\Users\\jumpi\\Documents\\GIT\\send_gmail_application'],
+             binaries=[('C:\\Users\\jumpi\\Documents\\GIT\\send_gmail_application\\chromedriver.exe', '.')],
              datas=[],
              hiddenimports=[],
              hookspath=[],
