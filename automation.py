@@ -28,7 +28,7 @@ class Automation:
         self.password = None
         self.file = None
         self.yaml_file = r'C:\Gmail_Sender\delay_newsletter_send.yaml'
-        self.csv_file = r'C:\Gmail_Sender\send_email.csv'
+        self.csv_file = r'C:\Gmail_Sender\send_emailer.csv'
         self.message = None
         self.txt = None
         self.input_message = None

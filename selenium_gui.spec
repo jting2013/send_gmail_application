@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['selenium_gui.py'],
+a = Analysis(['automation.py'],
              pathex=['C:\\Users\\jumpi\\Documents\\GIT\\send_gmail_application\\chromedriver.exe'],
              binaries=[('C:\\Users\\jumpi\\Documents\\GIT\\send_gmail_application\\chromedriver.exe', '.')],
              datas=[],
@@ -23,7 +23,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='selenium_gui_one_cache_timer',
+          name='gmail_sender_automation',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
